@@ -45,6 +45,11 @@ action :before_compile do
     "database.yml" => "config/database.yml"
   })
 
+  #TODO use something like Chef::Mixin::DeepMerge
+  #example https://github.com/opscode-cookbooks/application_php/blob/master/providers/cakephp.rb#L14
+  new_resource.database['host'] ||= new_resource.find_database_server(new_resource.database_master_role)
+  new_resource.database['encoding'] ||= 'utf8'
+  new_resource.database['reconnect'] ||= 'true'
 
   if new_resource.symlink_logs
     new_resource.purge_before_symlink.push("log")
@@ -176,7 +181,6 @@ def install_gems
 end
 
 def create_database_yml
-  host = new_resource.database['host'] || new_resource.find_database_server(new_resource.database_master_role)
 
   template "#{new_resource.path}/shared/database.yml" do
     source new_resource.database_template || "database.yml.erb"
@@ -185,7 +189,6 @@ def create_database_yml
     group new_resource.group
     mode "644"
     variables(
-      :host => host,
       :database => new_resource.database,
       :rails_env => new_resource.environment_name
     )
